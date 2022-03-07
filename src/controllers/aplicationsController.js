@@ -1,6 +1,5 @@
+//Get the model
 const Aplication = require('../models/Aplication');
-
-var mongoose = require('mongoose');
 
 
 // Get all
@@ -41,7 +40,6 @@ module.exports.create = [
 
         // initialize record
         var aplication = new Aplication({
-
             name: req.body.name,
             created_at: new Date(),
             updated_at: new Date(),
@@ -68,6 +66,7 @@ module.exports.update = [
     function (req, res) {
 
         var id = req.params.id;
+        //find the aplication record
         Aplication.findOne({ _id: id }, function (err, aplication) {
             if (err) {
                 return res.status(500).json({
@@ -80,10 +79,7 @@ module.exports.update = [
                     message: 'No such record'
                 });
             }
-
             // update record
-
-
             aplication.name = req.body.name ? req.body.name : aplication.name;
             aplication.updated_at = new Date();
 

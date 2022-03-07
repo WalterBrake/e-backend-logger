@@ -1,7 +1,9 @@
+//Get the model
 const Authorization = require('../models/Authorization');
 
 const config = require('../config/')
 const jwt = require('jsonwebtoken');
+const Aplication = require('../models/Aplication');
 
 
 // Get all
@@ -40,27 +42,43 @@ module.exports.show = function (req, res) {
 module.exports.create = [
     function (req, res) {
 
-        // initialize record
-        var authorization = new Authorization({
-            application_id: req.body.application_id,
-            token: jwt.sign({application_id: req.body.application_id}, config.authSecret),
-            created_at: new Date(),
-            updated_at: new Date(),
-        })
 
-        // save record
-        authorization.save(function (err, authorization) {
+        //find the aplication record
+        Aplication.findById(req.body.application_id, function (err, aplication) {
             if (err) {
                 return res.status(500).json({
-                    message: 'Error saving record',
-                    error: err
+                    message: 'Error getting aplication, not found.'
                 });
             }
-            return res.json({
-                message: 'saved',
-                _id: authorization._id
-            });
-        })
+            if (!aplication) {
+                return res.status(401).json({ message: 'Error getting aplication, not found.' })
+            }
+
+            // initialize record
+            var authorization = new Authorization({
+                application_id: aplication._id,
+                token: jwt.sign({ application_id: req.body.application_id }, config.authSecret),
+                created_at: new Date(),
+                updated_at: new Date(),
+            })
+
+            // save record
+            authorization.save(function (err, authorization) {
+                if (err) {
+                    return res.status(500).json({
+                        message: 'Error saving record',
+                        error: err
+                    });
+                }
+                return res.json({
+                    message: 'saved',
+                    _id: authorization._id
+                });
+            })
+        });
+
+
+
     }
 ]
 
@@ -69,30 +87,13 @@ module.exports.update = [
     function (req, res) {
 
         var id = req.params.id;
-        Authorization.findOne({ _id: id }, function (err, authorization) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error saving record',
-                    error: err
-                });
-            }
-            if (!authorization) {
-                return res.status(404).json({
-                    message: 'No such record'
-                });
-            }
-
-            // update record
-
-
-            authorization.application_id = req.body.application_id ? req.body.application_id : authorization.application_id;
-            authorization.updated_at = new Date();
-
-            // save record
-            authorization.save(function (err, authorization) {
+        //find the aplication record
+        Authorization.findOne
+            ({ _id: id }, async function (err, authorization) {
                 if (err) {
                     return res.status(500).json({
-                        message: 'Error getting record.'
+                        message: 'Error saving record',
+                        error: err
                     });
                 }
                 if (!authorization) {
@@ -100,9 +101,46 @@ module.exports.update = [
                         message: 'No such record'
                     });
                 }
-                return res.json(authorization);
+
+                // update record
+                if (req.body.application_id) {
+
+                    try {
+                        //find the token in the database
+                        let response = await Aplication.findById(req.body.application_id)
+                        console.log(response)
+                        if (!response) {
+                            return res.status(401).json({ message: 'Error getting aplication, not found.' })
+                        }
+
+                        authorization.application_id = response._id;
+                    } catch (err) {
+                        console.log(err)
+                        return res.status(500).json({
+                            message: 'Error getting aplication, not found. 500'
+                        });
+
+                    }
+
+                } else {
+                    authorization.application_id = authorization.application_id;
+                }
+                authorization.updated_at = new Date();
+                // save record
+                authorization.save(function (err, authorization) {
+                    if (err) {
+                        return res.status(500).json({
+                            message: 'Error getting record.'
+                        });
+                    }
+                    if (!authorization) {
+                        return res.status(404).json({
+                            message: 'No such record'
+                        });
+                    }
+                    return res.json(authorization);
+                });
             });
-        });
     }
 
 ]

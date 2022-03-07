@@ -1,3 +1,5 @@
+//Get the model
+const Aplication = require('../models/Aplication');
 const Log = require('../models/Log');
 
 var mongoose = require('mongoose');
@@ -38,33 +40,42 @@ module.exports.show = function (req, res) {
 // Create
 module.exports.create = [
   function (req, res) {
-
-    // initialize record
-    var log = new Log({
-      application_id: mongoose.Types.ObjectId(req.body.application_id),
-      type: req.body.type,
-      priority: req.body.priority,
-      path: req.body.path,
-      message: req.body.message,
-      request: req.body.request,
-      response: req.body.response,
-      created_at: new Date(),
-      updated_at: new Date(),
-    })
-
-    // save record
-    log.save(function (err, log) {
+    //find the aplication record
+    Aplication.findById(req.body.application_id, function (err, aplication) {
       if (err) {
         return res.status(500).json({
-          message: 'Error saving record',
-          error: err
+          message: 'Error getting aplication, not found.'
         });
       }
-      return res.json({
-        message: 'saved',
-        _id: log._id
-      });
-    })
+      if (!aplication) {
+        return res.status(401).json({ message: 'Error getting aplication, not found.' })
+      }
+      // initialize record
+      var log = new Log({
+        application_id: aplication._id,
+        type: req.body.type,
+        priority: req.body.priority,
+        path: req.body.path,
+        message: req.body.message,
+        request: req.body.request,
+        response: req.body.response,
+        created_at: new Date(),
+        updated_at: new Date(),
+      })
+      // save record
+      log.save(function (err, log) {
+        if (err) {
+          return res.status(500).json({
+            message: 'Error saving record',
+            error: err
+          });
+        }
+        return res.json({
+          message: 'saved',
+          _id: log._id
+        });
+      })
+    });
   }
 ]
 
@@ -73,7 +84,7 @@ module.exports.update = [
   function (req, res) {
 
     var id = req.params.id;
-    Log.findOne({ _id: id }, function (err, log) {
+    Log.findOne({ _id: id }, async function (err, log) {
       if (err) {
         return res.status(500).json({
           message: 'Error saving record',
@@ -85,9 +96,27 @@ module.exports.update = [
           message: 'No such record'
         });
       }
-
       // update record
+      if (req.body.application_id) {
 
+        try {
+          //find the aplication record
+          let response = await Aplication.findById(req.body.application_id)
+          console.log(response)
+          if (!response) {
+            return res.status(401).json({ message: 'Error getting aplication, not found.' })
+          }
+          log.application_id = response._id;
+        } catch (err) {
+          console.log(err)
+          return res.status(500).json({
+            message: 'Error getting aplication, not found. 500'
+          });
+        }
+      } else {
+        log.application_id = log.application_id;
+      }
+      // update record
       log.type = req.body.type ? req.body.type : log.type;
       log.priority = req.body.priority ? req.body.priority : log.priority;
       log.path = req.body.path ? req.body.path : log.path;
