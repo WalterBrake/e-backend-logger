@@ -1,4 +1,4 @@
-const Authorization = require('../../../models/Authorization');
+const Authorization = require('../models/Authorization');
 
 const config = require('../config/')
 const jwt = require('jsonwebtoken');

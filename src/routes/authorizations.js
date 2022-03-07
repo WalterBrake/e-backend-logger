@@ -3,7 +3,7 @@ const { Router } = require('express')
 
 
 
-const schemas = require('../validators/authorization');
+const schemas = require('../../validators/authorization');
 const middleware = require('../middlewares/joi');
 
 const router = Router()
